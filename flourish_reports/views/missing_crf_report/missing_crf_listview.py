@@ -1,4 +1,11 @@
+import csv
+import pandas as pd
+from datetime import date
+from typing import Any
+from django.db.models import Model
 from django.apps import apps as django_apps
+from django.db.models import OuterRef, Subquery, Count
+from django.http import HttpRequest, HttpResponse
 from edc_base.view_mixins import EdcBaseViewMixin
 from edc_dashboard.view_mixins import ListboardFilterViewMixin, SearchFormViewMixin
 from edc_dashboard.views import ListboardView
@@ -6,7 +13,8 @@ from edc_navbar import NavbarViewMixin
 from ...model_wrappers import CaregiverAppointmentModelWrapper
 from .filters import MissingListboardViewFilters
 from flourish_child.models import Appointment as ChildAppointments
-
+from edc_metadata.models import CrfMetadata
+from edc_metadata.constants import REQUIRED
 class MissingCrfListView(EdcBaseViewMixin,
                          NavbarViewMixin,
                          ListboardFilterViewMixin,
@@ -31,8 +39,73 @@ class MissingCrfListView(EdcBaseViewMixin,
     def maternal_visit_cls(self):
         return django_apps.get_model(self.maternal_visit_model)
 
+    def get(self, request, *args, **kwargs) -> HttpResponse:
+
+        download_request = request.GET.get('download', None)
+
+        if download_request:
+
+            crf_metadata_list = []
+
+            for appointment in self.get_queryset():
+
+                try:
+
+                    crf_metadata_obj = CrfMetadata.objects.filter(
+                        entry_status=REQUIRED,
+                        subject_identifier=appointment.subject_identifier,
+                        visit_code=appointment.visit_code,
+                        visit_code_sequence=appointment.visit_code_sequence
+                    )
+                except CrfMetadata.DoesNotExist:
+                    pass
+                else:
+
+                    temp_list = list(crf_metadata_obj.values(
+                        'subject_identifier',
+                        'schedule_name',
+                        'visit_code',
+                        'visit_code_sequence',
+                        'model',
+                        'entry_status'))
+
+                    temp_list.append({
+                        'appointment_status': appointment.appt_status,
+                        'appointment_date': appointment.appt_datetime.date().isoformat()
+                    })
+
+                    df = pd.DataFrame(temp_list)
+
+                    crf_metadata_list.append(df)
+            date
+
+            response = HttpResponse(content_type='text/csv')
+            response['Content-Disposition'] = f'attachment; filename="missing_crf_{date.today().isoformat()}.csv"'
+
+            concatenated_df = pd.concat(crf_metadata_list, axis=0, ignore_index=True)
+            concatenated_df.to_csv(path_or_buf=response, index=False)
+
+            return response
+
+        return super().get(request, *args, **kwargs)
+
     def get_queryset(self):
         queryset = super().get_queryset()
-        maternal_visits = self.maternal_visit_cls.objects.all()
 
-        return queryset.filter(maternalvisit__in=maternal_visits)
+        maternal_visits = self.maternal_visit_cls.objects.all()
+        appt_id = list()
+
+        for appt in queryset.only('id'):
+
+            crf_metadata = CrfMetadata.objects.filter(
+                subject_identifier=appt.subject_identifier,
+                visit_code=appt.visit_code,
+                visit_code_sequence=appt.visit_code_sequence,
+                entry_status=REQUIRED
+            )
+
+            if crf_metadata.count() != 1:
+                appt_id.append(appt.id)
+
+        return queryset.filter(
+            maternalvisit__in=maternal_visits).exclude(id__in=appt_id,)

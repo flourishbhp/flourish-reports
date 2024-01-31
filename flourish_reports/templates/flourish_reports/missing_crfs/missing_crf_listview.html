@@ -1,6 +1,7 @@
 {% extends "edc_dashboard/listboard.html" %}
 
 
+h1
 
 {% block listboard_table_header %}
 
@@ -28,7 +29,11 @@
 <td>{{ result.visit_code }}</td>
 <td>{% firstof result.visit_code_sequence '0' %}</td>
 <td>{{ result.missing_crf }}</td>
-<td><a href="" class="btn btn-primary">Dashboard</a></td>
+<td><a href="/subject/subject_dashboard/{{result.subject_identifier}}" class="btn btn-primary">Dashboard</a></td>
 
 
 {% endblock listboard_table_columns %}
+
+{% block extra_content%}
+<a href="?download=True" style="margin-bottom: 1.5em;" class="btn btn-primary">Download Export</a>
+{% endblock extra_content %}

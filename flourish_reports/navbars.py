@@ -24,8 +24,15 @@ flourish_reports.append_item(
                url_name='flourish_reports:download_report_url'))
 
 flourish_reports.append_item(
+    NavbarItem(name='missing_crf_dashboard',
+               label='Missing Reports Summary',
+               fa_icon='fa-cogs',
+               url_name='flourish_reports:missing_crf_dashboard_url'))
+
+
+flourish_reports.append_item(
     NavbarItem(name='missing_crf_report',
-               label='Missing Reports',
+               label='Missing Reports Listboard',
                fa_icon='fa-cogs',
                url_name='flourish_reports:missing_crf_report_url'))
 

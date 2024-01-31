@@ -1,4 +1,4 @@
 from .enrolment.enrolment_reports import EnrolmentReportView
 from .recruitment.download_report import DownloadReportView
 from .recruitment.recruitment_reports import RecruitmentReportView
-from .missing_crf_report import MissingCrfListView
+from .missing_crf_report import MissingCrfListView, MissingCrfTemplateView

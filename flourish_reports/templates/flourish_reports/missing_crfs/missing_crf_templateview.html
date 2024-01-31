@@ -1,0 +1,189 @@
+{% extends 'edc_base/base.html' %}
+
+
+{% block extra-scripts %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.0.2/dist/chart.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://code.highcharts.com/highcharts.src.js"></script>
+<script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+<script src="https://code.highcharts.com/highcharts.js"></script>
+<script src="https://code.highcharts.com/modules/series-label.js"></script>
+<script src="https://code.highcharts.com/modules/exporting.js"></script>
+<script src="https://code.highcharts.com/modules/export-data.js"></script>
+<script src="https://code.highcharts.com/modules/accessibility.js"></script>
+
+
+{% endblock extra-scripts %}
+
+
+{% block main %}
+<h2 style="text-align: center;">Missing CRF For Preg. Mothers Statistics </h2>
+
+<br>
+<h4 style="text-align: center;">Pre-enrolment</h4>
+<br>
+
+<div class="row w-100 jumbotron">
+    <div class="col-md-4">
+        <div class="card border-info md-sm-1 p-1">
+            <div class="card border-info shadow text-info p-1 my-card"><span aria-hidden="true"></span></div>
+            <div class="text-info text-center mt-3">
+                <h4>{{preg_screening.title}}</h4>
+            </div>
+            <div class="text-info text-center mt-2">
+                <h1>0</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-success mx-sm-1 p-3">
+            <div class="card border-success shadow text-success p-3 my-card"><span aria-hidden="true"></span></div>
+            <div class="text-success text-center mt-3">
+                <h4>{{missing_locators_statistics.title}}</h4>
+            </div>
+            <div class="text-success text-center mt-2">
+                <h1>{{missing_locators_statistics.count}}</h1>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card border-danger mx-sm-1 p-3">
+            <div class="card border-danger shadow text-danger p-3 my-card"><span aria-hidden="true"></span></div>
+            <div class="text-danger text-center mt-3">
+                <h4>{{missing_antenatal_statistics.title}}</h4>
+            </div>
+            <div class="text-danger text-center mt-2">
+                <h1>{{missing_antenatal_statistics.count}}</h1>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div class="row">
+    <br>
+    <h4 style="text-align: center;">Antenental Enrolment Missing CRFs</h4>
+    <br>
+    <div class="col-md-6">
+        <div class="panel panel-info">
+            <div class="panel-heading">Missing CRF for completed appointments</div>
+            <div class="panel-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">CRF</th>
+                            <th scope="col">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        {% for key, value in antenental_completed_appt_statistics.items %}
+
+                        {% if value %}
+                        <tr>
+                            <td>{{key}}</td>
+                            <td>{{value}}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="panel panel-info">
+            <div class="panel-heading">Missing CRF for incomplete appointments</div>
+            <div class="panel-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">CRF</th>
+                            <th scope="col">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        {% for key, value in antenental_incomplete_appt_statistics.items %}
+
+                        {% if value %}
+                        <tr>
+                            <td>{{key}}</td>
+                            <td>{{value}}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="row">
+    <br>
+    <h4 style="text-align: center;">Delivery Missing CRFs</h4>
+    <br>
+    <div class="col-md-6">
+        <div class="panel panel-info">
+            <div class="panel-heading">Missing CRF for completed appointments</div>
+            <div class="panel-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">CRF</th>
+                            <th scope="col">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        {% for key, value in birth_completed_appt_statistics.items %}
+
+                        {% if value %}
+                        <tr>
+                            <td>{{key}}</td>
+                            <td>{{value}}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <div class="panel panel-info">
+            <div class="panel-heading">Missing CRF for incomplete appointments</div>
+            <div class="panel-body">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th scope="col">CRF</th>
+                            <th scope="col">Count</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+
+                        {% for key, value in birth_incomplete_appt_statistics.items %}
+
+                        {% if value %}
+                        <tr>
+                            <td>{{key}}</td>
+                            <td>{{value}}</td>
+                        </tr>
+                        {% endif %}
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+{% endblock %}

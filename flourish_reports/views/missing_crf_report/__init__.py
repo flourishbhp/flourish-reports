@@ -1,1 +1,2 @@
 from .missing_crf_listview import MissingCrfListView
+from .missing_crf_templateview import MissingCrfTemplateView
