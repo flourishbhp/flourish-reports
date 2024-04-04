@@ -2,7 +2,8 @@ import csv
 import pandas as pd
 from datetime import date
 from typing import Any
-from django.db.models import Model
+
+from django.db.models import Model, Q
 from django.apps import apps as django_apps
 from django.db.models import OuterRef, Subquery, Count
 from django.http import HttpRequest, HttpResponse
@@ -15,6 +16,7 @@ from .filters import MissingListboardViewFilters
 from flourish_child.models import Appointment as ChildAppointments
 from edc_metadata.models import CrfMetadata
 from edc_metadata.constants import REQUIRED
+from ...util.migrations_helper import MigrationHelper
 class MissingCrfListView(EdcBaseViewMixin,
                          NavbarViewMixin,
                          ListboardFilterViewMixin,
@@ -77,7 +79,6 @@ class MissingCrfListView(EdcBaseViewMixin,
                     df = pd.DataFrame(temp_list)
 
                     crf_metadata_list.append(df)
-            date
 
             response = HttpResponse(content_type='text/csv')
             response['Content-Disposition'] = f'attachment; filename="missing_crf_{date.today().isoformat()}.csv"'
@@ -95,17 +96,29 @@ class MissingCrfListView(EdcBaseViewMixin,
         maternal_visits = self.maternal_visit_cls.objects.all()
         appt_id = list()
 
-        for appt in queryset.only('id'):
+        for appt in queryset.only('id', 'appt_datetime'):
 
             crf_metadata = CrfMetadata.objects.filter(
+                Q(created__lte=appt.appt_datetime) | Q(modified__lte=appt.appt_datetime),
                 subject_identifier=appt.subject_identifier,
                 visit_code=appt.visit_code,
                 visit_code_sequence=appt.visit_code_sequence,
-                entry_status=REQUIRED
-            )
+                entry_status=REQUIRED)
 
-            if crf_metadata.count() != 1:
+            for crf_metadata_obj in crf_metadata:
+
+                model_cls = django_apps.get_model(crf_metadata_obj.model)
+
+                migration_helper = MigrationHelper(model_cls._meta.app_label)
+
+                date_created = migration_helper.get_date_created(crf_metadata.model)
+
+                if date_created and date_created < crf_metadata_obj.created.date():
+                     continue
+                
                 appt_id.append(appt.id)
+                   
 
         return queryset.filter(
-            maternalvisit__in=maternal_visits).exclude(id__in=appt_id,)
+            maternalvisit__in=maternal_visits).filter(
+                id__in=appt_id, )
