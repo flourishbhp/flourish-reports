@@ -16,7 +16,7 @@ from .filters import MissingListboardViewFilters
 from flourish_child.models import Appointment as ChildAppointments
 from edc_metadata.models import CrfMetadata
 from edc_metadata.constants import REQUIRED
-from ...util.migrations_helper import MigrationHelper
+from ...util import MigrationHelper
 class MissingCrfListView(EdcBaseViewMixin,
                          NavbarViewMixin,
                          ListboardFilterViewMixin,
