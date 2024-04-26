@@ -16,10 +16,21 @@ class EnrolmentReportMixin:
     child_dataset_cls = django_apps.get_model('flourish_child.childdataset')
     child_birth_cls = django_apps.get_model('flourish_child.childbirth')
     ante_enrol_cls = django_apps.get_model('flourish_caregiver.antenatalenrollment')
+    child_offstudy_model = 'flourish_prn.childoffstudy'
+
+    @property
+    def child_offstudy_cls(self):
+        return django_apps.get_model(self.child_offstudy_model)
+
+    @property
+    def offstudy_pids(self):
+        pids = self.child_offstudy_cls.objects.values_list(
+            'subject_identifier', flat=True)
+        return pids
 
     @property
     def participants_cohort(self):
-        return self.cohort_cls.objects.all()
+        return self.cohort_cls.objects.exclude(subject_identifier__in=self.offstudy_pids)
 
     def get_cohorts(self, enroll=False):
         if enroll:
