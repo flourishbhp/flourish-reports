@@ -9,6 +9,7 @@
 <th>Visit Code</th>
 <th>Missing CRFs</th>
 <th>CRFs</th>
+<th>Dashboard</th>
 
 {% endblock listboard_table_header %}
 
@@ -23,7 +24,7 @@
 <td>{% firstof result.visit_code_sequence '0' %}</td>
 <td>{{ result.missing_crf_count }}</td>
 <td>{{ result.missing_crf_names }}</td>
-
+<td><a class="btn btn-primary" href="{{request.get_host}}/subject/subject_dashboard/{{result.subject_identifier}}">Dashboard</a></td>
 
 {% endblock listboard_table_columns %}
 
