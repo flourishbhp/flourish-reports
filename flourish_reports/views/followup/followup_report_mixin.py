@@ -59,7 +59,7 @@ class FollowupReportMixin:
 
     def parse_to_set(self, data=[]):
         return [(row.get('subject_identifier'), row.get('name'), row.get('enrollment_date')) for row in data]
-        
+
     def expected_fus(self, records={}):
         expected_fu = []
         for child_cohort in self.unique_cohort_instances:
@@ -90,11 +90,11 @@ class FollowupReportMixin:
             elif not child_cohort.get('enrollment_cohort'):
                 expected = self.sq_enrolled_expected(
                     child_cohort.get('name'), child_cohort.get('child_age'))
-            
+
             if expected:
                 due_fu.append(child_cohort)
         records.update({'due_fus': due_fu})
-            
+
     def sq_enrolled_expected(self, cohort_name, child_age):
         cohort_limits = {'cohort_b': 7, 'cohort_c': 12}
         if child_age >= cohort_limits.get(cohort_name):
@@ -157,7 +157,7 @@ class FollowupReportMixin:
                      'enrollment_date': child_cohort.get('enrollment_date'),
                      'fu_visit_date': visit.last().report_datetime.date(),
                      'child_age': child_age})
-        records.update({'completed_fus': has_fu})   
+        records.update({'completed_fus': has_fu})
         return has_fu
 
     def incomplete_fus(self, records={}):
@@ -193,6 +193,7 @@ class FollowupReportMixin:
         scheduled = self.child_cohort_instances.annotate(
             is_scheduled=Exists(subquery)).filter(current_cohort=True, is_scheduled=True).values(
                 'subject_identifier', 'name', )
+
         for row in scheduled:
             scheduled_dt = child_utils.get_child_fu_schedule(row.get('subject_identifier')).date
             row.update(scheduled_date=scheduled_dt)

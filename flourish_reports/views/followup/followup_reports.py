@@ -50,10 +50,10 @@ class FollowupReportView(FollowUpVisualizations, EdcBaseViewMixin,
                  table_id='sq_enrolled_fu_dt',
                  border=0,
                  index=False),
-            'sq_enrol_before_fu_table': self.sq_enrol_before_fu_table,
-            'scheduled_fu_table': self.upcoming_scheduled_df.to_html(
+             'sq_enrol_before_fu_table': self.sq_enrol_before_fu_table,
+             'scheduled_fu_table': self.upcoming_scheduled_df.to_html(
                 classes=['table', 'table-striped'],
-                 table_id='sq_enrolled_fu_dt',
+                 table_id='scheduled_fu_dt',
                  border=0,
                  index=False)
              })

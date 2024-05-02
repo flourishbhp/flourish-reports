@@ -55,6 +55,12 @@
 				{{ sq_enrol_table|safe }}
 			</div>
 		</div>
+		<div>
+			<div class="col-md-12">
+				<h4 style="font-weight:400;padding:10px;color:#3d5466">Participants scheduled for FU</h4>
+				{{ scheduled_fu_table|safe }}
+			</div>
+		</div>
 	</div>
 	
 	<script>
@@ -72,6 +78,10 @@
 				buttons: ['pageLength', 'csv', 'excel']
 			});
             $('#sq_enrolled_fu_dt').DataTable({
+				dom: 'Bfrtip',
+				buttons: ['pageLength', 'csv', 'excel']
+			});
+            $('#scheduled_fu_dt').DataTable({
 				dom: 'Bfrtip',
 				buttons: ['pageLength', 'csv', 'excel']
 			});

@@ -30,7 +30,7 @@ class FollowUpVisualizations(FollowupReportMixin):
 
         # Start all threads
         self.start_threads(threads)
-    
+
         # Wait for all threads to finish
         self.await_threads(threads)
 
@@ -40,12 +40,12 @@ class FollowUpVisualizations(FollowupReportMixin):
 
         # Start all threads
         self.start_threads(threads)
-    
+
         # Wait for all threads to finish
         self.await_threads(threads)
 
         self.incomplete_fus(records)
-        
+
         return records
 
     def start_threads(self, threads):
@@ -100,7 +100,7 @@ class FollowUpVisualizations(FollowupReportMixin):
         expected_fu_per_cohort = self.expected_fu_df.groupby('name')['subject_identifier'].count().reset_index()
         expected_fu_per_cohort.columns = ['name', 'expected_fu_count']
         return expected_fu_per_cohort.to_html(classes=['table', 'table-striped'], index=False)
-        
+
     @property
     def expected_fu_pie(self):
         fig = px.pie(
