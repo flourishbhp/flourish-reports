@@ -1,0 +1,12 @@
+<table id='expected_fu_dt'>
+	<th>
+		<tr>Subject Identifier</tr>
+		<tr>Cohort Name</tr>
+	</th>
+    <tbody>
+		{% for row in data %}
+			<tr>{{row.subject_identifier}}</tr>
+			<tr>{{row.name}}</tr>
+		{% endfor %}
+	</tbody>
+</table>
