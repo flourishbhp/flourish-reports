@@ -65,6 +65,12 @@ class MissingCrfListView(EdcBaseViewMixin,
 
                     offstudy_exists = self.caregiver_off_study_cls.objects.filter(
                         subject_identifier=appointment.subject_identifier).exists()
+                    
+                    model_cls = django_apps.get_model(crf_metadata_obj.model)
+                    
+                    migration_helper = MigrationHelper(model_cls._meta.app_label)
+
+                    date_created = migration_helper.get_date_created(crf_metadata_obj.model)
 
                     if offstudy_exists:
                         is_off_study = True
@@ -74,12 +80,13 @@ class MissingCrfListView(EdcBaseViewMixin,
                         visit_code=appointment.visit_code,
                         visit_code_sequence=appointment.visit_code_sequence,
                         schedule_name=appointment.schedule_name,
-                        appointment_date=appointment.appt_datetime,
+                        appointment_date=appointment.appt_datetime.date().isoformat(),
+                        date_created = date_created.isoformat(),
                         appointment_status=appointment.appt_status,
                         crf_name=django_apps.get_model(
                             crf_metadata_obj.model)._meta.verbose_name,
                         entry_status=crf_metadata_obj.entry_status,
-                        is_off_study=is_off_study,
+                        is_off_study="Off Study" if is_off_study else "On Study",
                         visit_date=appointment.maternalvisit.report_datetime.date().isoformat()
 
                     )

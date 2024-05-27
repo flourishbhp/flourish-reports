@@ -1,0 +1,90 @@
+{% extends 'edc_base/base.html' %}
+{% load static %}
+
+{% block extra-scripts %}
+	{{ block.super }}
+	<!-- Include Plotly JavaScript -->
+	<script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+	<!-- Include DataTables CSS and JavaScript -->
+	<link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.24/css/jquery.dataTables.min.css">
+	<script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/1.10.24/js/jquery.dataTables.min.js"></script>
+	<!-- Include DataTables Buttons CSS and JS -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/buttons/2.2.2/css/buttons.dataTables.min.css">
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/2.2.2/js/dataTables.buttons.min.js"></script>
+    <script type="text/javascript" charset="utf8" src="https://cdn.datatables.net/buttons/2.2.2/js/buttons.html5.min.js"></script>
+{% endblock extra-scripts %}
+
+{% block main %}
+	<div>
+		<div class="row">
+			<div class="col-md-6">
+				{{ expected_fu_pie|safe }}
+			</div>
+			<div class="col-md-6" style="padding:100px">
+				{{ expected_fu_counts|safe }}
+			</div>
+			<div class="col-md-12">
+				{{ expected_fu_table|safe }}
+			</div>
+		</div>
+		<div>
+			<div class="col-md-12">
+				{{ completed_fu_hist|safe }}
+			</div>
+			<div class="col-md-12">
+				{{ completed_fu_table|safe }}
+			</div>
+		</div>
+		<div>
+			<div class="col-md-6">
+				{{ incomplete_fu_bar|safe }}
+			</div>
+			<div class="col-md-6" style="padding-top:100px">
+				{{ complete_incomplete_fu_table|safe }}
+			</div>
+			<div class="col-md-12">
+				{{ incomplete_fu_table|safe }}
+			</div>
+		</div>
+		<div>
+			<div class="col-md-6">
+				<h4 style="font-weight:400;padding:10px;color:#3d5466">Participants sequentially enrolled before completing FU</h4>
+				{{ sq_enrol_before_fu_table|safe }}
+			</div>
+			<div class="col-md-12">
+				{{ sq_enrol_table|safe }}
+			</div>
+		</div>
+		<div>
+			<div class="col-md-12">
+				<h4 style="font-weight:400;padding:10px;color:#3d5466">Participants scheduled for FU</h4>
+				{{ scheduled_fu_table|safe }}
+			</div>
+		</div>
+	</div>
+	
+	<script>
+        $(document).ready(function() {
+            $('#expected_fu_dt').DataTable({
+				dom: 'Bfrtip',
+				buttons: ['pageLength', 'csv', 'excel']
+			});
+            $('#completed_fu_dt').DataTable({
+				dom: 'Bfrtip',
+				buttons: ['pageLength', 'csv', 'excel']
+			});
+            $('#incompleted_fu_dt').DataTable({
+				dom: 'Bfrtip',
+				buttons: ['pageLength', 'csv', 'excel']
+			});
+            $('#sq_enrolled_fu_dt').DataTable({
+				dom: 'Bfrtip',
+				buttons: ['pageLength', 'csv', 'excel']
+			});
+            $('#scheduled_fu_dt').DataTable({
+				dom: 'Bfrtip',
+				buttons: ['pageLength', 'csv', 'excel']
+			});
+        });
+    </script>
+{% endblock main %}
