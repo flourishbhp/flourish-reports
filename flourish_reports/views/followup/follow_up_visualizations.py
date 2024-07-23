@@ -61,7 +61,8 @@ class FollowUpVisualizations(FollowupReportMixin):
     @property
     def expected_fu_df(self):
         return pd.DataFrame(
-            self.expected_fu_list, columns=['subject_identifier', 'name', 'child_age', 'enrollment_date'])
+            self.expected_fu_list, columns=['subject_identifier', 'name', 'child_age',
+                                            'enrollment_date', 'cohort_assign_date'])
 
     @property
     def due_fu_df(self):

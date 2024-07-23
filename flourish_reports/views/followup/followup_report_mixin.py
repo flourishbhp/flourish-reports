@@ -1,3 +1,4 @@
+import pytz
 from dateutil.relativedelta import relativedelta
 from django.apps import apps as django_apps
 from django.db.models import Q
@@ -7,13 +8,12 @@ from django.db.models.expressions import OuterRef, Exists, Subquery
 from edc_base.utils import get_utcnow
 from flourish_child.helper_classes.utils import child_utils
 
+from ..view_mixins import ReportsViewMixin
 
-class FollowupReportMixin:
+tz = pytz.timezone('Africa/Gaborone')
 
-    cohort_model = 'flourish_caregiver.cohort'
-    cohortschedules_model = 'flourish_caregiver.cohortschedules'
-    child_visit_model = 'flourish_child.childvisit'
-    child_offstudy_model = 'flourish_prn.childoffstudy'
+
+class FollowupReportMixin(ReportsViewMixin):
 
     @property
     def year_3_date(self):
@@ -21,60 +21,40 @@ class FollowupReportMixin:
         study_open_dt = app_config.study_open_datetime
         return (study_open_dt + relativedelta(years=3)).date()
 
-    @property
-    def cohort_model_cls(self):
-        return django_apps.get_model(self.cohort_model)
-
-    @property
-    def cohortschedules_model_cls(self):
-        return django_apps.get_model(self.cohortschedules_model)
-
-    @property
-    def child_visit_model_cls(self):
-        return django_apps.get_model(self.child_visit_model)
-
-    @property
-    def child_offstudy_model_cls(self):
-        return django_apps.get_model(self.child_offstudy_model)
-
-    @property
-    def child_offstudy_sidx(self):
-        return self.child_offstudy_model_cls.objects.values_list(
-            'subject_identifier', flat=True)
-
-    @property
-    def child_cohort_instances(self):
-        cohort_instances = self.cohort_model_cls.objects.exclude(
-            Q(subject_identifier__in=self.child_offstudy_sidx) | Q(name__icontains='sec'))
-        return cohort_instances
-
-    @property
-    def unique_cohort_instances(self):
-        latest_instances = self.cohort_model_cls.objects.exclude(
-            Q(subject_identifier__in=self.child_offstudy_sidx) | Q(name__icontains='sec')).filter(
-                subject_identifier=OuterRef('subject_identifier')).order_by('assign_datetime').values('id')[:1]
-
-        cohort_instances = self.cohort_model_cls.objects.filter(id=Subquery(latest_instances))
-        return cohort_instances
+    # @property
+    # def unique_cohort_instances(self):
+    #     latest_instances = self.cohort_model_cls.objects.exclude(
+    #         Q(subject_identifier__in=self.child_offstudy_sidx) | Q(name__icontains='sec')).filter(
+    #             subject_identifier=OuterRef('subject_identifier')).order_by('assign_datetime').values('id')[:1]
+    #
+    #     cohort_instances = self.cohort_model_cls.objects.filter(id=Subquery(latest_instances))
+    #     return cohort_instances
 
     def parse_to_set(self, data=[]):
         return [(row.get('subject_identifier'), row.get('name'), row.get('enrollment_date')) for row in data]
 
     def expected_fus(self, records={}):
         expected_fu = []
-        for child_cohort in self.unique_cohort_instances:
+        current_records = []
+        for child_cohort in self.primary_cohort_instances:
             subject_identifier = child_cohort.subject_identifier
             cohort_name = child_cohort.name
             child_age = child_cohort.child_age
-            enrollment_dt = child_cohort.caregiver_child_consent.consent_datetime.date()
+            enrollment_dt = child_cohort.caregiver_child_consent.consent_datetime.astimezone(tz).date()
+            assign_dt = child_cohort.assign_datetime.astimezone(tz).date()
+            record = {
+                'subject_identifier': subject_identifier,
+                'name': cohort_name,
+                'child_age': child_age,
+                'enrollment_cohort': child_cohort.enrollment_cohort,
+                'enrollment_date': enrollment_dt,
+                'cohort_assign_date': assign_dt}
 
-            expected_fu.append(
-                {'subject_identifier': subject_identifier,
-                 'name': cohort_name,
-                 'child_age': child_age,
-                 'enrollment_cohort': child_cohort.enrollment_cohort,
-                 'enrollment_date': enrollment_dt})
-        records.update({'expected_fus': expected_fu})
+            expected_fu.append(record)
+            if child_cohort.current_cohort:
+                current_records.append(record)
+        records.update({'expected_fus': expected_fu,
+                        'current_expected_fus': current_records})
         return expected_fu
 
     def due_for_fus(self, records={}):
@@ -147,9 +127,11 @@ class FollowupReportMixin:
             subject_identifier = child_cohort.get('subject_identifier')
             cohort_name = child_cohort.get('name')
             child_age = child_cohort.get('child_age')
+
             cohort_sch_names = self.get_fu_schedule_name(cohort_name)
 
             visit = self.get_fu_visit(subject_identifier, cohort_sch_names)
+
             if visit.exists():
                 has_fu.append(
                     {'subject_identifier': subject_identifier,
@@ -161,7 +143,7 @@ class FollowupReportMixin:
         return has_fu
 
     def incomplete_fus(self, records={}):
-        expected_fus = records.get('expected_fus')
+        expected_fus = records.get('current_expected_fus')
         completed_fus = records.get('completed_fus')
         has_fus = self.parse_to_set(completed_fus)
         expected_fus = self.parse_to_set(expected_fus)
@@ -172,9 +154,15 @@ class FollowupReportMixin:
     def sq_enrolled_before_fu(self, records={}):
         enrolled_before = []
         for sidx in self.sq_enrolled_sidxs:
-            cohorts = self.child_cohort_instances.filter(subject_identifier=sidx,)
-            enrol_cohort = cohorts.filter(enrollment_cohort=True).first()
-            curr_cohort = cohorts.exclude(enrollment_cohort=True).order_by('assign_datetime').last()
+            enrol_cohort = self.primary_cohort_instances.filter(
+                subject_identifier=sidx, enrollment_cohort=True)
+            if not enrol_cohort.exists():
+                continue
+
+            enrol_cohort = enrol_cohort.first()
+            curr_cohort = self.child_cohort_instances.filter(
+                subject_identifier=sidx).exclude(
+                    enrollment_cohort=True).order_by('assign_datetime').last()
 
             schedule_names = self.get_fu_schedule_name(enrol_cohort.name)
             if not self.get_fu_visit(sidx, schedule_names).exists():
