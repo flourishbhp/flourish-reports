@@ -17,6 +17,7 @@ class FollowUpVisualizations(FollowupReportMixin):
         self.sq_enrolled_list = records.get('sq_enrolled_before_fu', [])
         self.scheduled_list = records.get('upcoming_scheduled', [])
         self.completed_list = records.get('completed_fus', [])
+        self.sq_completed_list = records.get('sq_completed_fus', [])
         self.incomplete_list = records.get('incomplete_fus', [])
         self.due_list = records.get('due_fus', [])
 
@@ -73,6 +74,11 @@ class FollowUpVisualizations(FollowupReportMixin):
     def completed_fu_df(self):
         return pd.DataFrame(
             self.completed_list, columns=['subject_identifier', 'name', 'child_age', 'enrollment_date', 'fu_visit_date'])
+
+    @property
+    def sq_completed_fu_df(self):
+        return pd.DataFrame(
+            self.sq_completed_list, columns=['subject_identifier', 'name', 'child_age', 'enrollment_date', 'fu_visit_date'])
 
     @property
     def incomplete_fu_df(self):
@@ -134,10 +140,14 @@ class FollowUpVisualizations(FollowupReportMixin):
         complete_per_cohort = self.completed_fu_df.groupby('name')['subject_identifier'].count().reset_index()
         complete_per_cohort.columns = ['name', 'completed_fu_count']
 
-        fu_table = pd.merge(
-            incomplete_per_cohort, complete_per_cohort, on='name', how='outer')
+        sq_complete_per_cohort = self.sq_completed_fu_df.groupby('name')['subject_identifier'].count().reset_index()
+        sq_complete_per_cohort.columns = ['name', 'sq_completed_fu_count']
 
-        fu_table = fu_table.fillna(0)
+        fu_table = pd.merge(
+            incomplete_per_cohort, complete_per_cohort,  on='name', how='outer')
+        fu_table = pd.merge(fu_table, sq_complete_per_cohort, on='name', how='outer')
+
+        fu_table = fu_table.fillna('-')
         return fu_table.to_html(classes=['table', 'table-striped'], index=False)
 
     @property

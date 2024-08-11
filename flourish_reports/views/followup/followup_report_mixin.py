@@ -21,15 +21,6 @@ class FollowupReportMixin(ReportsViewMixin):
         study_open_dt = app_config.study_open_datetime
         return (study_open_dt + relativedelta(years=3)).date()
 
-    # @property
-    # def unique_cohort_instances(self):
-    #     latest_instances = self.cohort_model_cls.objects.exclude(
-    #         Q(subject_identifier__in=self.child_offstudy_sidx) | Q(name__icontains='sec')).filter(
-    #             subject_identifier=OuterRef('subject_identifier')).order_by('assign_datetime').values('id')[:1]
-    #
-    #     cohort_instances = self.cohort_model_cls.objects.filter(id=Subquery(latest_instances))
-    #     return cohort_instances
-
     def parse_to_set(self, data=[]):
         return [(row.get('subject_identifier'), row.get('name'), row.get('enrollment_date')) for row in data]
 
@@ -47,6 +38,7 @@ class FollowupReportMixin(ReportsViewMixin):
                 'name': cohort_name,
                 'child_age': child_age,
                 'enrollment_cohort': child_cohort.enrollment_cohort,
+                'current_cohort': child_cohort.current_cohort,
                 'enrollment_date': enrollment_dt,
                 'cohort_assign_date': assign_dt}
 
@@ -122,6 +114,7 @@ class FollowupReportMixin(ReportsViewMixin):
 
     def completed_fus(self, records={}):
         has_fu = []
+        sq_has_fu = []
         expected_fus = records.get('expected_fus')
         for child_cohort in expected_fus:
             subject_identifier = child_cohort.get('subject_identifier')
@@ -133,13 +126,17 @@ class FollowupReportMixin(ReportsViewMixin):
             visit = self.get_fu_visit(subject_identifier, cohort_sch_names)
 
             if visit.exists():
-                has_fu.append(
-                    {'subject_identifier': subject_identifier,
-                     'name': cohort_name,
-                     'enrollment_date': child_cohort.get('enrollment_date'),
-                     'fu_visit_date': visit.last().report_datetime.date(),
-                     'child_age': child_age})
-        records.update({'completed_fus': has_fu})
+                record = {'subject_identifier': subject_identifier,
+                          'name': cohort_name,
+                          'enrollment_date': child_cohort.get('enrollment_date'),
+                          'fu_visit_date': visit.last().report_datetime.date(),
+                          'child_age': child_age}
+                has_fu.append(record)
+                if (subject_identifier in self.sq_enrolled_sidxs and
+                        not child_cohort.get('current_cohort')):
+                    sq_has_fu.append(record)
+        records.update({'completed_fus': has_fu,
+                        'sq_completed_fus': sq_has_fu})
         return has_fu
 
     def incomplete_fus(self, records={}):

@@ -1,6 +1,8 @@
 from django import template
 from django.apps import apps as django_apps
 
+from ..views.view_mixins import ReportsViewMixin
+
 register = template.Library()
 
 
@@ -37,11 +39,12 @@ def convert_to_title_case(snake_case_string):
 
 @register.filter
 def get_cohort_breakdown(cohort, report_type=''):
-    cohort_cls = django_apps.get_model('flourish_caregiver.cohort')
+    view_mixin_cls = ReportsViewMixin()
+
     if report_type.lower() == 'current':
-        cohorts = cohort_cls.objects.filter(name=cohort, current_cohort=True)
+        cohorts = view_mixin_cls.get_cohorts().filter(current_cohort=True, name=cohort)
     elif report_type.lower() == 'enrolment':
-        cohorts = cohort_cls.objects.filter(name=cohort, enrollment_cohort=True)
+        cohorts = view_mixin_cls.get_cohorts().filter(enrollment_cohort=True, name=cohort)
 
     anc_unexposed = 0
     anc_exposed = 0
@@ -53,7 +56,7 @@ def get_cohort_breakdown(cohort, report_type=''):
                 anc_exposed += 1
             else:
                 prior_exposed += 1
-        else:
+        elif cohort.exposure_status == 'UNEXPOSED':
             if cohort.check_antenetal_exists():
                 anc_unexposed += 1
             else:
