@@ -1,9 +1,8 @@
 import pytz
 from dateutil.relativedelta import relativedelta
 from django.apps import apps as django_apps
-from django.db.models import Q
 from django.db.models.aggregates import Count
-from django.db.models.expressions import OuterRef, Exists, Subquery
+from django.db.models.expressions import OuterRef, Exists
 
 from edc_base.utils import get_utcnow
 from flourish_child.helper_classes.utils import child_utils
@@ -22,7 +21,8 @@ class FollowupReportMixin(ReportsViewMixin):
         return (study_open_dt + relativedelta(years=3)).date()
 
     def parse_to_set(self, data=[]):
-        return [(row.get('subject_identifier'), row.get('name'), row.get('enrollment_date')) for row in data]
+        return [(row.get('subject_identifier'), row.get('name'),
+                 row.get('exposure_status'), row.get('enrollment_date')) for row in data]
 
     def expected_fus(self, records={}):
         expected_fu = []
@@ -36,6 +36,7 @@ class FollowupReportMixin(ReportsViewMixin):
             record = {
                 'subject_identifier': subject_identifier,
                 'name': cohort_name,
+                'exposure_status': child_cohort.exposure_status,
                 'child_age': child_age,
                 'enrollment_cohort': child_cohort.enrollment_cohort,
                 'current_cohort': child_cohort.current_cohort,
@@ -126,11 +127,14 @@ class FollowupReportMixin(ReportsViewMixin):
             visit = self.get_fu_visit(subject_identifier, cohort_sch_names)
 
             if visit.exists():
+                missing = ', '.join(self.has_neurodev_assessments(visit[0]))
                 record = {'subject_identifier': subject_identifier,
                           'name': cohort_name,
+                          'exposure_status': child_cohort.get('exposure_status'),
                           'enrollment_date': child_cohort.get('enrollment_date'),
                           'fu_visit_date': visit.last().report_datetime.date(),
-                          'child_age': child_age}
+                          'child_age': child_age,
+                          'neuro_crfs_nd': missing, }
                 has_fu.append(record)
                 if (subject_identifier in self.sq_enrolled_sidxs and
                         not child_cohort.get('current_cohort')):
@@ -138,6 +142,18 @@ class FollowupReportMixin(ReportsViewMixin):
         records.update({'completed_fus': has_fu,
                         'sq_completed_fus': sq_has_fu})
         return has_fu
+
+    def has_neurodev_assessments(self, visit=None):
+        neuro_dev_crfs = ['childcbclsection1', 'brief2selfreported',
+                          'childpenncnb', 'brief2parent']
+        missing = []
+
+        for neuro_crf in neuro_dev_crfs:
+            model_cls = django_apps.get_model('flourish_child', neuro_crf)
+            _exists = model_cls.objects.filter(child_visit=visit).exists()
+            if not _exists:
+                missing.append(neuro_crf)
+        return missing
 
     def incomplete_fus(self, records={}):
         expected_fus = records.get('current_expected_fus')
@@ -177,7 +193,7 @@ class FollowupReportMixin(ReportsViewMixin):
             date__gte=get_utcnow().date())
         scheduled = self.child_cohort_instances.annotate(
             is_scheduled=Exists(subquery)).filter(current_cohort=True, is_scheduled=True).values(
-                'subject_identifier', 'name', )
+                'subject_identifier', 'name', 'exposure_status', )
 
         for row in scheduled:
             scheduled_dt = child_utils.get_child_fu_schedule(row.get('subject_identifier')).date
