@@ -22,7 +22,8 @@ class FollowupReportMixin(ReportsViewMixin):
 
     def parse_to_set(self, data=[]):
         return [(row.get('subject_identifier'), row.get('name'),
-                 row.get('exposure_status'), row.get('enrollment_date')) for row in data]
+                 row.get('exposure_status'), row.get('enrollment_date'),
+                 row.get('enrol_type')) for row in data]
 
     def expected_fus(self, records={}):
         expected_fu = []
@@ -39,6 +40,7 @@ class FollowupReportMixin(ReportsViewMixin):
                 'exposure_status': child_cohort.exposure_status,
                 'child_age': child_age,
                 'enrollment_cohort': child_cohort.enrollment_cohort,
+                'enrol_type': 'ANC' if child_cohort.check_antenetal_exists() else 'PRIOR',
                 'current_cohort': child_cohort.current_cohort,
                 'enrollment_date': enrollment_dt,
                 'cohort_assign_date': assign_dt}
@@ -133,6 +135,7 @@ class FollowupReportMixin(ReportsViewMixin):
                           'exposure_status': child_cohort.get('exposure_status'),
                           'enrollment_date': child_cohort.get('enrollment_date'),
                           'fu_visit_date': visit.last().report_datetime.date(),
+                          'enrol_type': child_cohort.get('enrol_type'),
                           'child_age': child_age,
                           'neuro_crfs_nd': missing, }
                 has_fu.append(record)
