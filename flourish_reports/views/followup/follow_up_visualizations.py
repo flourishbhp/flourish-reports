@@ -8,6 +8,10 @@ from plotly.offline import plot
 
 from .followup_report_mixin import FollowupReportMixin
 
+color_palette = {'cohort_a': '#00cc96',
+                 'cohort_b': '#636efa',
+                 'cohort_c': '#ef553b', }
+
 
 class FollowUpVisualizations(FollowupReportMixin):
 
@@ -17,6 +21,7 @@ class FollowUpVisualizations(FollowupReportMixin):
         self.sq_enrolled_list = records.get('sq_enrolled_before_fu', [])
         self.scheduled_list = records.get('upcoming_scheduled', [])
         self.completed_list = records.get('completed_fus', [])
+        self.sq_completed_list = records.get('sq_completed_fus', [])
         self.incomplete_list = records.get('incomplete_fus', [])
         self.due_list = records.get('due_fus', [])
 
@@ -61,27 +66,38 @@ class FollowUpVisualizations(FollowupReportMixin):
     @property
     def expected_fu_df(self):
         return pd.DataFrame(
-            self.expected_fu_list, columns=['subject_identifier', 'name', 'child_age', 'enrollment_date'])
+            self.expected_fu_list, columns=['subject_identifier', 'name', 'exposure_status',
+                                            'child_age', 'enrollment_date', 'cohort_assign_date'])
 
     @property
     def due_fu_df(self):
         return pd.DataFrame(
-            self.due_list, columns=['subject_identifier', 'name', 'child_age', 'enrollment_date'])
+            self.due_list, columns=['subject_identifier', 'name', 'exposure_status', 'child_age',
+                                    'enrollment_date'])
 
     @property
     def completed_fu_df(self):
         return pd.DataFrame(
-            self.completed_list, columns=['subject_identifier', 'name', 'child_age', 'enrollment_date', 'fu_visit_date'])
+            self.completed_list, columns=['subject_identifier', 'name', 'exposure_status', 'child_age',
+                                          'enrollment_date', 'fu_visit_date', 'neuro_crfs_nd'])
+
+    @property
+    def sq_completed_fu_df(self):
+        return pd.DataFrame(
+            self.sq_completed_list, columns=['subject_identifier', 'name', 'exposure_status', 'child_age',
+                                             'enrollment_date', 'fu_visit_date'])
 
     @property
     def incomplete_fu_df(self):
         return pd.DataFrame(
-            self.incomplete_list, columns=['subject_identifier', 'name', 'enrollment_date'])
+            self.incomplete_list, columns=['subject_identifier', 'name', 'exposure_status',
+                                           'enrollment_date', 'enrol_type'])
 
     @property
     def upcoming_scheduled_df(self):
         return pd.DataFrame(
-            self.scheduled_list, columns=['subject_identifier', 'name', 'scheduled_date'])
+            self.scheduled_list, columns=['subject_identifier', 'name', 'exposure_status',
+                                          'scheduled_date'])
 
     @property
     def sq_enrolled_before_fu_df(self):
@@ -89,54 +105,74 @@ class FollowUpVisualizations(FollowupReportMixin):
             self.sq_enrolled_list, columns=['subject_identifier', 'enrol_cohort', 'current_cohort'])
 
     @property
-    def expected_fu_bar(self):
-        fig = px.bar(
-            self.expected_fu_df, x='name', title='Expected FUs by Cohort')
-        bar_div = plot(fig, output_type='div')
-        return bar_div
-
-    @property
     def expected_fu_counts(self):
-        expected_fu_per_cohort = self.expected_fu_df.groupby('name')['subject_identifier'].count().reset_index()
-        expected_fu_per_cohort.columns = ['name', 'expected_fu_count']
+        expected_fu_per_cohort = self.expected_fu_df.groupby(
+            ['name', 'exposure_status']).size().reset_index(name='expected_fu_count')
+
         return expected_fu_per_cohort.to_html(classes=['table', 'table-striped'], index=False)
 
     @property
     def expected_fu_pie(self):
         fig = px.pie(
-            self.expected_fu_df, names='name', title='Expected FUs by Cohort')
+            self.expected_fu_df, names='name', color='name',
+            color_discrete_map=color_palette,
+            title='Expected FUs by Cohort')
         pie_div = plot(fig, output_type='div')
         return pie_div
 
     @property
     def completed_fu_hist(self):
+        completed_fu_df = self.completed_fu_df.sort_values(by='name')
         fig = px.histogram(
-            self.completed_fu_df, x='fu_visit_date', color='name', title='Completed FUs over time by Cohort')
+            completed_fu_df, x='fu_visit_date', color='name',
+            color_discrete_map=color_palette,
+            title='Completed FUs over time by Cohort')
         hist_div = plot(fig, output_type='div')
         return hist_div
 
     @property
     def incomplete_fu_bar(self):
-        incomplete_per_cohort = self.incomplete_fu_df.groupby('name')['subject_identifier'].count().reset_index()
-        incomplete_per_cohort.columns = ['name', 'pending_fu_count']
+        incomplete_per_cohort = self.incomplete_fu_df.groupby(
+            ['name', 'exposure_status']).size().reset_index(name='pending_fu_count')
 
         fig = px.bar(
-            incomplete_per_cohort, x='name', y='pending_fu_count', title='Pending FUs by Cohort')
+            incomplete_per_cohort, x='name', y='pending_fu_count',
+            color='exposure_status',
+            color_discrete_map=color_palette,
+            barmode='group', title='Pending FUs by Cohort')
         bar_div = plot(fig, output_type='div')
         return bar_div
 
     @property
     def complete_incomplete_fu_table(self):
-        incomplete_per_cohort = self.incomplete_fu_df.groupby('name')['subject_identifier'].count().reset_index()
-        incomplete_per_cohort.columns = ['name', 'pending_fu_count']
+        completed_fu_df = pd.DataFrame(
+            self.completed_list,
+            columns=['subject_identifier', 'name', 'exposure_status', 'enrol_type', ])
+        sq_completed_fu_df = pd.DataFrame(
+            self.sq_completed_list,
+            columns=['subject_identifier', 'name', 'exposure_status', 'enrol_type', ])
+        incomplete_per_cohort = self.incomplete_fu_df.groupby(
+            ['name', 'exposure_status', 'enrol_type']).size().reset_index(name='pending_fu')
 
-        complete_per_cohort = self.completed_fu_df.groupby('name')['subject_identifier'].count().reset_index()
-        complete_per_cohort.columns = ['name', 'completed_fu_count']
+        complete_per_cohort = completed_fu_df.groupby(
+            ['name', 'exposure_status', 'enrol_type']).size().reset_index(name='completed_fu')
+
+        sq_complete_per_cohort = sq_completed_fu_df.groupby(
+            ['name', 'exposure_status', 'enrol_type']).size().reset_index(name='sq_completed_fu')
 
         fu_table = pd.merge(
-            incomplete_per_cohort, complete_per_cohort, on='name', how='outer')
+            incomplete_per_cohort, complete_per_cohort,
+            on=['name', 'exposure_status', 'enrol_type'], how='outer')
+        fu_table = pd.merge(fu_table, sq_complete_per_cohort,
+                            on=['name', 'exposure_status', 'enrol_type'], how='outer')
 
-        fu_table = fu_table.fillna(0)
+        fu_table.fillna(0, inplace=True)
+        fu_table['pending_fu'] = fu_table['pending_fu'].astype(int)
+        fu_table['completed_fu'] = fu_table['completed_fu'].astype(int)
+        fu_table['sq_completed_fu'] = fu_table['sq_completed_fu'].astype(int)
+
+        # Order by `cohort_name`
+        fu_table = fu_table.sort_values(by='name')
         return fu_table.to_html(classes=['table', 'table-striped'], index=False)
 
     @property
