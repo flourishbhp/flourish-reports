@@ -1,37 +1,67 @@
 {% extends "edc_dashboard/listboard.html" %}
 
+{% block extra_content%}
+	<ul class="nav nav-pills nav-justified">
+		<li class="nav-item {% if listboard_url == 'flourish_reports:missing_crf_report_url' %}active{% endif %}">
+			<a class="nav-link" aria-current="page" href="{% url 'flourish_reports:missing_crf_report_url' %}">Caregiver CRFs</a>
+		</li>
+		<li class="nav-item {% if listboard_url == 'flourish_reports:child_missing_crf_report_url' %}active{% endif %}">
+			<a class="nav-link" href="{% url 'flourish_reports:child_missing_crf_report_url' %}">Child CRFs</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link" href="#">Caregiver Requisitions</a>
+		</li>
+		<li class="nav-item">
+			<a class="nav-link" href="#">Child Requisitions</a>
+		</li>
+	</ul>
+	<br />
+	<div>
+		<a href="?download=True" style="margin-bottom: 1.5em" class="btn btn-primary">
+			Download Export
+		</a>
+	</div>
+{% endblock extra_content %}
+
 {% block listboard_table_header %}
 
 <th>#</th>
 <th>Subject Identifier</th>
 <th>Appt Status</th>
-<th>Appt Date</th>
 <th>Visit Code</th>
 <th>Missing CRFs</th>
 <th>CRFs</th>
-<th>Dashboard</th>
+<th></th>
 
 {% endblock listboard_table_header %}
 
-{% block listboard_table_button_column %}
-{% endblock %}
+{% block listboard_table_body %}
+	{% for result in results %}
+		<tr>
+			<td>{{ forloop.counter }}</td>
 
-{% block listboard_table_columns %}
+			{% block listboard_table_columns %}
+				<td style="white-space: nowrap">{{ result.subject_identifier }}</td>
+				<td>{{ result.object.appointment.appt_status | title }}</td>
+				<td>{{ result.visit_code }}.{% firstof result.visit_code_sequence '0' %}</td>
+				<td>{{ result.missing_crfs_count }}</td>
+				<td>{{ result.missing_crfs_names }}</td>
+			{% endblock listboard_table_columns %}
 
-<td>{{ result.subject_identifier }}</td>
-<td>{{ result.appt_status | title }}</td>
-<td>{{ result.visit_code }}</td>
-<td>{% firstof result.visit_code_sequence '0' %}</td>
-<td>{{ result.missing_crf_count }}</td>
-<td>{{ result.missing_crf_names }}</td>
-<td><a class="btn btn-primary" href="{{request.get_host}}/subject/subject_dashboard/{{result.subject_identifier}}">Dashboard</a></td>
-
-{% endblock listboard_table_columns %}
-
-
-{% block extra_content%}
-<a href="?download=True" style="margin-bottom: 1.5em" class="btn btn-primary">Download Export</a>
-{% endblock extra_content %}
-
-
-
+			{% block listboard_table_button_column %}
+	            <td style="white-space: nowrap">
+	            	<div class="btn-group">
+	            		<a 	id="btn-subject-dashboard-{{result.subject_identifier}}"
+	            			class="btn btn-primary btn-sm"
+	            			role="button"
+	            			title="Go to subject's dashboard"
+	            			href="{% url subject_dashboard_url result.subject_identifier %}">
+       						<i class="far fa-user-circle fa-sm"></i> Dashboard
+       						<i class="fa fa-share"></i>
+       					</a>
+	            	</div>
+	            </td>
+	        {% endblock listboard_table_button_column %}
+       	</tr>
+    {% endfor %}
+{% endblock listboard_table_body %}
