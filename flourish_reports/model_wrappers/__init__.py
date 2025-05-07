@@ -1,1 +1,2 @@
-from .caregiver_appointment_model_wrapper import CaregiverAppointmentModelWrapper
+from .child_visit_model_wrapper import ChildVisitModelWrapper
+from .maternal_visit_model_wrapper import MaternalVisitModelWrapper
