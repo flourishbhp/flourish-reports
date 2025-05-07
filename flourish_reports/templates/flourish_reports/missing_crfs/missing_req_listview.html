@@ -29,8 +29,8 @@
 <th>Subject Identifier</th>
 <th>Appt Status</th>
 <th>Visit Code</th>
-<th>Missing CRFs</th>
-<th>CRFs</th>
+<th>Missing Requisitions</th>
+<th>Requisitions</th>
 <th></th>
 
 {% endblock listboard_table_header %}
@@ -44,8 +44,8 @@
 				<td style="white-space: nowrap">{{ result.subject_identifier }}</td>
 				<td>{{ result.object.appointment.appt_status | title }}</td>
 				<td>{{ result.visit_code }}.{% firstof result.visit_code_sequence '0' %}</td>
-				<td>{{ result.missing_crfs_count }}</td>
-				<td>{{ result.missing_crfs_names }}</td>
+				<td>{{ result.missing_reqs_count }}</td>
+				<td>{{ result.missing_reqs_names }}</td>
 			{% endblock listboard_table_columns %}
 
 			{% block listboard_table_button_column %}
@@ -55,11 +55,7 @@
 	            			class="btn btn-primary btn-sm"
 	            			role="button"
 	            			title="Go to subject's dashboard"
-	            			{% if listboard_url == 'flourish_reports:child_missing_crf_report_url' %}
-	            				href="{% url child_dashboard_url result.subject_identifier %}">
-	            			{% else %}
-	            				href="{% url subject_dashboard_url result.subject_identifier %}">
-	            			{% endif %}
+	            			href="{% url subject_dashboard_url result.subject_identifier %}">
        						<i class="far fa-user-circle fa-sm"></i> Dashboard
        						<i class="fa fa-share"></i>
        					</a>
